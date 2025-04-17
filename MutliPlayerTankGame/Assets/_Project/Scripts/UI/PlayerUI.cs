@@ -1,10 +1,12 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using Mirror;
 
 public class PlayerUI : NetworkBehaviour
 {
-    public TextMeshProUGUI healthText;
+    [Header("References")]
+    public Slider healthSlider;
     public TextMeshProUGUI teamText;
     public Transform uiCanvas;
 
@@ -14,7 +16,7 @@ public class PlayerUI : NetworkBehaviour
     {
         mainCamera = Camera.main;
 
-        // Hide UI canvas if this is not the local player
+        // Only enable UI for local player
         if (!isLocalPlayer && uiCanvas != null)
         {
             uiCanvas.gameObject.SetActive(false);
@@ -23,17 +25,19 @@ public class PlayerUI : NetworkBehaviour
 
     void Update()
     {
-        // Make the UI face the camera
         if (uiCanvas != null && mainCamera != null)
         {
+            // Face the camera
             uiCanvas.rotation = Quaternion.LookRotation(uiCanvas.position - mainCamera.transform.position);
         }
     }
 
-    public void SetHealth(float health)
+    public void SetHealth(float health, float maxHealth = 100f)
     {
-        if (healthText != null)
-            healthText.text = $"Health: {health}";
+        if (healthSlider != null)
+        {
+            healthSlider.value = health / maxHealth;
+        }
     }
 
     public void SetTeam(string team)

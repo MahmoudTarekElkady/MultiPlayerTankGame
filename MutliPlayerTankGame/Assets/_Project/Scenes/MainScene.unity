@@ -271,6 +271,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   target: {fileID: 0}
   offset: {x: 0, y: 20, z: 0}
+  followSpeed: 5
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -730,7 +731,6 @@ GameObject:
   - component: {fileID: 1784076842}
   - component: {fileID: 1784076845}
   - component: {fileID: 1784076844}
-  - component: {fileID: 1784076843}
   m_Layer: 5
   m_Name: KillText
   m_TagString: Untagged
@@ -757,21 +757,6 @@ RectTransform:
   m_AnchoredPosition: {x: 39.1, y: -127.5}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1784076843
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1784076841}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 972464e9ff1b7744598e7927631a2bc0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  healthText: {fileID: 0}
-  teamText: {fileID: 0}
-  uiCanvas: {fileID: 0}
 --- !u!114 &1784076844
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -876,7 +861,9 @@ MonoBehaviour:
   playerPrefab: {fileID: 246872608705321096, guid: b386830c851d92a4b922734c22d2b67d, type: 3}
   autoCreatePlayer: 1
   playerSpawnMethod: 0
-  spawnPrefabs: []
+  spawnPrefabs:
+  - {fileID: 3264281510194409734, guid: 1c88c71d84b0f5d4c848dabb8d19e53c, type: 3}
+  - {fileID: 246872608705321096, guid: b386830c851d92a4b922734c22d2b67d, type: 3}
   exceptionsDisconnect: 1
   snapshotSettings:
     bufferTimeMultiplier: 2

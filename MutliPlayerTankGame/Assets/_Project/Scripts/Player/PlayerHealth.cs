@@ -6,6 +6,7 @@ public class PlayerHealth : NetworkBehaviour
     [SyncVar(hook = nameof(OnHealthChanged))]
     public float health = 100f;
 
+    private PlayerUI playerUI;
     public NetworkTankPlayer owner;
 
     public void TakeDamage(float damage)
@@ -20,14 +21,17 @@ public class PlayerHealth : NetworkBehaviour
         }
     }
 
-    void OnHealthChanged(float oldHealth, float newHealth)
+    // Hook method to update health slider when health changes
+   public void OnHealthChanged(float oldHealth, float newHealth)
     {
-        if (owner != null && owner.playerUI != null)
-        {
-            owner.playerUI.SetHealth(newHealth);
-        }
+        if (playerUI == null)
+            playerUI = GetComponentInChildren<PlayerUI>();
+
+        if (playerUI != null)
+            playerUI.SetHealth(newHealth);  // Updates the health slider
     }
 
+    // Death handling logic
     void OnDeath()
     {
         if (isServer)
@@ -37,13 +41,14 @@ public class PlayerHealth : NetworkBehaviour
         }
     }
 
-    public override void OnStartClient()
+    public override void OnStartAuthority()
     {
-        base.OnStartClient();
-
-        var tankPlayer = GetComponent<NetworkTankPlayer>();
-        if (tankPlayer != null)
-            owner = tankPlayer;
+        base.OnStartAuthority();
+        playerUI = GetComponentInChildren<PlayerUI>();
+        if (playerUI != null)
+        {
+            playerUI.SetHealth(health);
+        }
     }
 
     [Command]

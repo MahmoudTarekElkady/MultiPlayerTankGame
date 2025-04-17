@@ -24,6 +24,9 @@ public class NetworkTankPlayer : NetworkBehaviour
 
     public PlayerUI playerUI;
 
+    public GameObject bulletPrefab;
+    public Transform firePoint;
+
     void Start()
     {
         if (isLocalPlayer)
@@ -78,7 +81,21 @@ public class NetworkTankPlayer : NetworkBehaviour
         {
             GetComponent<PlayerHealth>().TakeDamage(20f);
         }
+        if (!isLocalPlayer) return;
 
+        MoveAndRotate();
+        CmdSendPositionAndRotation(transform.position, transform.rotation);
+
+        // Check for firing input
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            CmdFireBullet();
+        }
+
+        if (isLocalPlayer && Input.GetKeyDown(KeyCode.K))
+        {
+            GetComponent<PlayerHealth>().TakeDamage(20f);
+        }
     }
 
     void FixedUpdate()
@@ -104,6 +121,46 @@ public class NetworkTankPlayer : NetworkBehaviour
         syncPosition = position;
         syncRotation = rotation;
     }
+
+    [Command]
+    void CmdFireBullet()
+    {
+        if (bulletPrefab == null || firePoint == null)
+        {
+            Debug.LogError("Missing bulletPrefab or firePoint reference on NetworkTankPlayer!");
+            return;
+        }
+
+        // Instantiate the bullet on the server
+        GameObject bullet = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
+
+        // Set the shooter/owner before spawning
+        Bullet bulletScript = bullet.GetComponent<Bullet>();
+        if (bulletScript != null)
+        {
+            bulletScript.owner = this; // Reference to the shooter for damage attribution
+        }
+        else
+        {
+            Debug.LogWarning("Bullet prefab is missing Bullet script!");
+        }
+
+        // Spawn bullet for all clients with ownership
+        NetworkServer.Spawn(bullet, connectionToClient);
+
+        // Set the bullet's velocity (move it forward)
+        Rigidbody rb = bullet.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.linearVelocity = bullet.transform.forward * bulletScript.speed;
+        }
+        else
+        {
+            Debug.LogWarning("Missing Rigidbody on bullet prefab.");
+        }
+    }
+
+
 
     [Command]
     void CmdSetPlayerTeam(Team team)
