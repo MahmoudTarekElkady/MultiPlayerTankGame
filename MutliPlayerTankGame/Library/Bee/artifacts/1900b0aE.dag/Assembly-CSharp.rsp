@@ -451,6 +451,7 @@
 -analyzer:"C:/Program Files/Unity/Hub/Editor/6000.0.42f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.UIToolkit.SourceGenerator.dll"
 "Assets/TutorialInfo/Scripts/Readme.cs"
 "Assets/_Project/Scripts/Game/Bullet.cs"
+"Assets/_Project/Scripts/Game/ReviveZone.cs"
 "Assets/_Project/Scripts/Network/KillFeed.cs"
 "Assets/_Project/Scripts/Player/CameraFollowTopDown.cs"
 "Assets/_Project/Scripts/Player/NetworkTankPlayer.cs"
@@ -458,6 +459,7 @@
 "Assets/_Project/Scripts/Player/PlayerRespawn.cs"
 "Assets/_Project/Scripts/Player/PlayerRevive.cs"
 "Assets/_Project/Scripts/UI/PlayerUI.cs"
+"Assets/_Project/Scripts/UI/TeamSelectionUI.cs"
 -langversion:9.0
 /deterministic
 /optimize+

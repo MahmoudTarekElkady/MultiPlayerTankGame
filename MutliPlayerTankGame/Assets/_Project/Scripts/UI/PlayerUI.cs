@@ -9,20 +9,23 @@ public class PlayerUI : NetworkBehaviour
     public Slider healthSlider;
     public TextMeshProUGUI teamText;
     public Transform uiCanvas;
-    public Image teamOutline;
-
 
     private Camera mainCamera;
 
     void Start()
     {
         mainCamera = Camera.main;
+        Debug.Log($"PlayerUI started for {transform.parent?.name ?? gameObject.name}");
 
-        // Only enable UI for local player
-        //if (!isLocalPlayer && uiCanvas != null)
-        //{
-        //    uiCanvas.gameObject.SetActive(false);
-        //}
+        if (healthSlider == null)
+        {
+            Debug.LogError($"Health slider reference missing on PlayerUI for {transform.parent?.name ?? gameObject.name}");
+        }
+
+        if (teamText == null)
+        {
+            Debug.LogError($"Team text reference missing on PlayerUI for {transform.parent?.name ?? gameObject.name}");
+        }
     }
 
     void Update()
@@ -33,23 +36,32 @@ public class PlayerUI : NetworkBehaviour
             uiCanvas.rotation = Quaternion.LookRotation(uiCanvas.position - mainCamera.transform.position);
         }
     }
-    public void SetTeamColor(Color color)
-    {
-        if (teamOutline != null)
-            teamOutline.color = color;
-    }
+
 
     public void SetHealth(float health, float maxHealth = 100f)
     {
         if (healthSlider != null)
         {
-            healthSlider.value = health / maxHealth;
+            float normalizedHealth = health / maxHealth;
+            healthSlider.value = normalizedHealth;
+            Debug.Log($"Set health UI for {transform.parent?.name ?? gameObject.name} to {health}/{maxHealth} = {normalizedHealth}");
+        }
+        else
+        {
+            Debug.LogError($"Health slider is null on PlayerUI for {transform.parent?.name ?? gameObject.name}");
         }
     }
 
     public void SetTeam(string team)
     {
         if (teamText != null)
+        {
             teamText.text = $"Team: {team}";
+            Debug.Log($"Set team text for {transform.parent?.name ?? gameObject.name} to {team}");
+        }
+        else
+        {
+            Debug.LogError($"Team text is null on PlayerUI for {transform.parent?.name ?? gameObject.name}");
+        }
     }
 }

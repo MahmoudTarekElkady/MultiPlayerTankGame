@@ -46,44 +46,57 @@ public class Bullet : NetworkBehaviour
     {
         if (!isServer) return;
 
-        // Try to find the NetworkTankPlayer on the hit object or its parents
-        GameObject hitObject = collision.gameObject;
-        NetworkTankPlayer playerTank = hitObject.GetComponent<NetworkTankPlayer>();
-        if (playerTank == null)
+        Debug.Log($"Bullet collision with: {collision.gameObject.name}");
+
+        // IMPORTANT: Process everything BEFORE destroying the bullet
+
+        // Find the root tank object
+        Transform rootObject = collision.transform;
+        while (rootObject.parent != null)
         {
-            // Try to get from parent if not found directly
-            playerTank = hitObject.GetComponentInParent<NetworkTankPlayer>();
+            rootObject = rootObject.parent;
         }
 
-        // If we found a player tank
-        if (playerTank != null && playerTank != owner)
+        // Try to find the player components on the root object
+        NetworkTankPlayer playerTank = rootObject.GetComponent<NetworkTankPlayer>();
+        PlayerHealth playerHealth = rootObject.GetComponent<PlayerHealth>();
+
+        Debug.Log($"Found playerTank: {playerTank != null}, Found playerHealth: {playerHealth != null}");
+
+        if (playerTank != null && playerHealth != null)
         {
-            // Prevent friendly fire, but still destroy bullet
-            if (playerTank.playerTeam == owner.playerTeam)
+            // Skip if we hit ourselves
+            if (playerTank == owner)
             {
+                Debug.Log("Hit self, ignoring damage");
+                NetworkServer.Destroy(gameObject);
+                return;
+            }
+
+            // Check team (Friendly Fire)
+            bool sameTeam = (owner != null && playerTank.playerTeam == owner.playerTeam &&
+                              playerTank.playerTeam != NetworkTankPlayer.Team.None);
+
+            Debug.Log($"Same team check: {sameTeam}, Owner team: {owner?.playerTeam}, Target team: {playerTank.playerTeam}");
+
+            if (sameTeam)
+            {
+                Debug.Log("Friendly fire prevented");
                 NetworkServer.Destroy(gameObject);
                 return;
             }
 
             // Apply damage
-            var health = playerTank.GetComponent<PlayerHealth>();
-            if (health != null)
-            {
-                health.TakeDamage(damage);
-                RpcApplyDamage(playerTank.gameObject);
-            }
-
-            // Always destroy the bullet
-            NetworkServer.Destroy(gameObject);
+            Debug.Log($"Applying {damage} damage to {playerTank.gameObject.name}");
+            playerHealth.TakeDamage(damage, owner);
         }
         else
         {
-            // Hit something else (wall, etc.)
-            NetworkServer.Destroy(gameObject);
+            Debug.Log($"Hit object without player components: {collision.gameObject.name}");
         }
 
-        // Debug to verify collision detection is happening
-        Debug.Log($"Bullet collided with {hitObject.name} and was destroyed");
+        // Always destroy the bullet at the end
+        NetworkServer.Destroy(gameObject);
     }
 
     [ClientRpc]
@@ -95,12 +108,9 @@ public class Bullet : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void RpcApplyDamage(GameObject target)
+    private void RpcShowHitEffect(GameObject target)
     {
-        var playerHealth = target.GetComponent<PlayerHealth>();
-        if (playerHealth != null)
-        {
-            playerHealth.OnHealthChanged(playerHealth.health, playerHealth.health - damage);
-        }
+        Debug.Log($"Hit effect shown on {target.name}");
+        // You could add visual hit effects here
     }
 }

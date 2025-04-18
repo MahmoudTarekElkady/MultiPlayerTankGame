@@ -1,14 +1,17 @@
 using UnityEngine;
 using Mirror;
 using UnityEngine.UI;
+using TMPro;
 
 public class NetworkTankPlayer : NetworkBehaviour
 {
     public enum Team { None, Team1, Team2 }
 
-    [SyncVar]
+    [SyncVar(hook = nameof(OnTeamChanged))]
     public Team playerTeam = Team.None;
-    public Color teamColor;
+
+
+    public Color teamColor = Color.white;
 
     [Header("Movement Settings")]
     public float moveSpeed = 5f;
@@ -26,6 +29,11 @@ public class NetworkTankPlayer : NetworkBehaviour
 
     public GameObject bulletPrefab;
     public Transform firePoint;
+
+    [Header("Team Colors")]
+    public Color team1Color = Color.red;
+    public Color team2Color = Color.blue;
+    public Color defaultColor = Color.white;
 
     void Start()
     {
@@ -48,17 +56,22 @@ public class NetworkTankPlayer : NetworkBehaviour
             {
                 Debug.LogError("KillText UI element not found!");
             }
+
+            // Show team selection UI if we're local player
+            ShowTeamSelectionUI();
         }
     }
 
     public override void OnStartClient()
     {
         base.OnStartClient();
-        playerUI.SetTeamColor(teamColor);
 
+        // Get the PlayerUI component
         playerUI = GetComponentInChildren<PlayerUI>();
+
         if (playerUI != null)
         {
+            // Set the team color and team name in UI
             playerUI.SetTeam(playerTeam.ToString());
 
             var health = GetComponent<PlayerHealth>();
@@ -69,19 +82,31 @@ public class NetworkTankPlayer : NetworkBehaviour
         var healthComponent = GetComponent<PlayerHealth>();
         if (healthComponent != null)
             healthComponent.owner = this;
+
+        // Initialize renderer color
+        UpdateVisualColor();
     }
 
+    // Hook called when team changes
+    void OnTeamChanged(Team oldTeam, Team newTeam)
+    {
+        // Update the color based on the new team
+        UpdateTeamColor();
+    }
+
+    // Update player's visual color
+    void UpdateVisualColor()
+    {
+        var renderer = GetComponent<Renderer>();
+        if (renderer != null)
+        {
+            renderer.material.color = teamColor;
+        }
+    }
+
+    // Add this method to NetworkTankPlayer.cs
     void Update()
     {
-        if (!isLocalPlayer) return;
-
-        MoveAndRotate();
-        CmdSendPositionAndRotation(transform.position, transform.rotation);
-
-        if (isLocalPlayer && Input.GetKeyDown(KeyCode.K))
-        {
-            GetComponent<PlayerHealth>().TakeDamage(20f);
-        }
         if (!isLocalPlayer) return;
 
         MoveAndRotate();
@@ -93,9 +118,44 @@ public class NetworkTankPlayer : NetworkBehaviour
             CmdFireBullet();
         }
 
-        if (isLocalPlayer && Input.GetKeyDown(KeyCode.K))
+        // Debug: Apply damage to self with T key
+        if (Input.GetKeyDown(KeyCode.T))
         {
-            GetComponent<PlayerHealth>().TakeDamage(20f);
+            Debug.Log("DEBUG: Self-damage triggered");
+            var health = GetComponent<PlayerHealth>();
+            if (health != null)
+            {
+                health.TakeDamage(20f, this);
+            }
+        }
+
+        // Debug: Apply damage to others with Y key
+        if (Input.GetKeyDown(KeyCode.Y))
+        {
+            Debug.Log("DEBUG: Attempting to damage all other players");
+            var players = FindObjectsOfType<NetworkTankPlayer>();
+            foreach (var player in players)
+            {
+                if (player != this)
+                {
+                    CmdDebugDamagePlayer(player.netId);
+                }
+            }
+        }
+    }
+
+    [Command]
+    void CmdDebugDamagePlayer(uint targetNetId)
+    {
+        NetworkIdentity targetIdentity = NetworkServer.spawned[targetNetId];
+        if (targetIdentity != null)
+        {
+            PlayerHealth targetHealth = targetIdentity.GetComponent<PlayerHealth>();
+            if (targetHealth != null)
+            {
+                Debug.Log($"SERVER: Applying debug damage to {targetIdentity.name}");
+                targetHealth.TakeDamage(20f, this);
+            }
         }
     }
 
@@ -103,6 +163,7 @@ public class NetworkTankPlayer : NetworkBehaviour
     {
         if (isLocalPlayer) return;
 
+        // Smooth interpolation for other clients
         transform.position = Vector3.Lerp(transform.position, syncPosition, Time.deltaTime * 10f);
         transform.rotation = Quaternion.Lerp(transform.rotation, syncRotation, Time.deltaTime * 10f);
     }
@@ -112,8 +173,11 @@ public class NetworkTankPlayer : NetworkBehaviour
         float move = Input.GetAxis("Vertical") * moveSpeed * Time.deltaTime;
         float turn = Input.GetAxis("Horizontal") * turnSpeed * Time.deltaTime;
 
-        transform.Translate(0, 0, move);
+        // Rotate around the Y-axis
         transform.Rotate(0, turn, 0);
+
+        // Move forward/backward along local forward (XZ plane)
+        transform.Translate(Vector3.forward * move);
     }
 
     [Command]
@@ -140,6 +204,7 @@ public class NetworkTankPlayer : NetworkBehaviour
         if (bulletScript != null)
         {
             bulletScript.owner = this; // Reference to the shooter for damage attribution
+            Debug.Log($"Bullet fired by {gameObject.name} on team {playerTeam}");
         }
         else
         {
@@ -160,35 +225,62 @@ public class NetworkTankPlayer : NetworkBehaviour
             Debug.LogWarning("Missing Rigidbody on bullet prefab.");
         }
     }
-
-
+    // Helper method to set the correct color based on team
+    private void UpdateTeamColor()
+    {
+        switch (playerTeam)
+        {
+            case Team.Team1:
+                teamColor = team1Color;
+                break;
+            case Team.Team2:
+                teamColor = team2Color;
+                break;
+            default:
+                teamColor = defaultColor;
+                break;
+        }
+    }
 
     [Command]
-    void CmdSetPlayerTeam(Team team)
+    public void CmdSetPlayerTeam(Team team)
     {
         playerTeam = team;
-
-        if (playerTeam == Team.Team1)
-            teamColor = Color.red;
-        else if (playerTeam == Team.Team2)
-            teamColor = Color.blue;
-
-        RpcUpdatePlayerColor(teamColor);
+        // Team color is updated via the SyncVar hook
     }
 
-    [ClientRpc]
-    void RpcUpdatePlayerColor(Color color)
-    {
-        GetComponent<Renderer>().material.color = color;
-    }
-
+    // Called from UI dropdown or button
     public void OnTeamSelected(int teamIndex)
     {
-        if (isLocalPlayer)
+        if (!isLocalPlayer) return;
+
+        Team selectedTeam = (Team)teamIndex;
+        Debug.Log($"Team selected: {selectedTeam}");
+        CmdSetPlayerTeam(selectedTeam);
+
+        // Also update the visual color immediately on the client
+        switch (selectedTeam)
         {
-            playerTeam = (Team)teamIndex;
-            CmdSetPlayerTeam(playerTeam);
+            case Team.Team1:
+                teamColor = team1Color;
+                break;
+            case Team.Team2:
+                teamColor = team2Color;
+                break;
+            default:
+                teamColor = defaultColor;
+                break;
         }
+
+        // Update the renderer color
+        var renderer = GetComponent<Renderer>();
+        if (renderer != null)
+        {
+            renderer.material.color = teamColor;
+        }
+
+        // Hide team selection UI after selection
+        HideTeamSelectionUI();
     }
 
     [Command]
@@ -204,18 +296,47 @@ public class NetworkTankPlayer : NetworkBehaviour
         {
             killText.text += $"\n{killerName} killed {deadPlayerName}";
         }
+
+        // Optional: Also log to console for debugging
+        Debug.Log($"{killerName} killed {deadPlayerName}");
     }
 
     [Command]
     void CmdRevivePlayer(NetworkIdentity playerIdentity)
     {
-        RpcRevivePlayer(playerIdentity);
+        // Check if the player is on the same team
+        var playerToRevive = playerIdentity.GetComponent<NetworkTankPlayer>();
+        if (playerToRevive != null && playerToRevive.playerTeam == this.playerTeam)
+        {
+            var playerHealth = playerIdentity.GetComponent<PlayerHealth>();
+            if (playerHealth != null && playerHealth.health <= 0)
+            {
+                // Revive the player with half health
+                playerHealth.health = 50f;
+                RpcRevivePlayer(playerIdentity);
+            }
+        }
     }
 
     [ClientRpc]
     void RpcRevivePlayer(NetworkIdentity playerIdentity)
     {
         Debug.Log($"Player {playerIdentity.gameObject.name} has been revived.");
+
+        // Re-enable player components
+        var playerHealth = playerIdentity.GetComponent<PlayerHealth>();
+        if (playerHealth != null)
+        {
+            // Reset visual state
+            var renderer = playerIdentity.GetComponentInChildren<MeshRenderer>();
+            if (renderer != null)
+                renderer.enabled = true;
+
+            // Re-enable controller
+            var controller = playerIdentity.GetComponent<NetworkTankPlayer>();
+            if (controller != null)
+                controller.enabled = true;
+        }
     }
 
     public void OnPlayerDeath(string killerName)
@@ -223,8 +344,77 @@ public class NetworkTankPlayer : NetworkBehaviour
         CmdPlayerDied(killerName, gameObject.name);
     }
 
+    // Check if can revive a player
     bool CanRevive(NetworkIdentity playerToRevive)
     {
-        return true;
+        var player = playerToRevive.GetComponent<NetworkTankPlayer>();
+        return player != null && player.playerTeam == this.playerTeam;
+    }
+
+    // Team selection UI methods
+    void ShowTeamSelectionUI()
+    {
+        // First try to find the UI through the singleton
+        TeamSelectionUI teamUI = TeamSelectionUI.Instance;
+
+        // If not found through singleton, try to find by name
+        if (teamUI == null)
+        {
+            GameObject teamSelectionUI = GameObject.Find("TeamSelectionUI");
+            if (teamSelectionUI != null)
+            {
+                teamUI = teamSelectionUI.GetComponent<TeamSelectionUI>();
+                if (teamUI != null)
+                {
+                    teamUI.ShowUI();
+                }
+                else
+                {
+                    teamSelectionUI.SetActive(true);
+                    Debug.LogWarning("TeamSelectionUI component not found but GameObject was activated");
+                }
+            }
+            else
+            {
+                Debug.LogError("TeamSelectionUI not found in scene! Make sure it exists and has the correct name.");
+            }
+        }
+        else
+        {
+            teamUI.ShowUI();
+        }
+    }
+
+    void HideTeamSelectionUI()
+    {
+        // First try to find the UI through the singleton
+        TeamSelectionUI teamUI = TeamSelectionUI.Instance;
+
+        // If not found through singleton, try to find by name
+        if (teamUI == null)
+        {
+            GameObject teamSelectionUI = GameObject.Find("TeamSelectionUI");
+            if (teamSelectionUI != null)
+            {
+                teamSelectionUI.SetActive(false);
+            }
+        }
+        else
+        {
+            teamUI.gameObject.SetActive(false);
+        }
+    }
+
+    // Add a method to handle revive zone detection
+    public void StartReviveProcess(NetworkIdentity deadPlayer)
+    {
+        if (!isLocalPlayer) return;
+
+        // Check if the dead player is a teammate
+        if (CanRevive(deadPlayer))
+        {
+            // Start the revive process
+            CmdRevivePlayer(deadPlayer);
+        }
     }
 }

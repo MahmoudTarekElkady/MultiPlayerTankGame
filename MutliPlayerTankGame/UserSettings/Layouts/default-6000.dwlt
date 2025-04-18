@@ -19,7 +19,7 @@ MonoBehaviour:
     width: 1536
     height: 772.8
   m_ShowMode: 4
-  m_Title: Inspector
+  m_Title: Hierarchy
   m_RootView: {fileID: 2}
   m_MinSize: {x: 875, y: 300}
   m_MaxSize: {x: 10000, y: 10000}
@@ -118,7 +118,7 @@ MonoBehaviour:
   m_MinSize: {x: 300, y: 100}
   m_MaxSize: {x: 24288, y: 16192}
   vertical: 1
-  controlID: 18
+  controlID: 40
   draggingID: 0
 --- !u!114 &6
 MonoBehaviour:
@@ -144,7 +144,7 @@ MonoBehaviour:
   m_MinSize: {x: 300, y: 100}
   m_MaxSize: {x: 24288, y: 16192}
   vertical: 0
-  controlID: 19
+  controlID: 41
   draggingID: 0
 --- !u!114 &7
 MonoBehaviour:
@@ -170,7 +170,7 @@ MonoBehaviour:
   m_MinSize: {x: 200, y: 100}
   m_MaxSize: {x: 16192, y: 16192}
   vertical: 1
-  controlID: 20
+  controlID: 42
   draggingID: 0
 --- !u!114 &8
 MonoBehaviour:
@@ -196,7 +196,7 @@ MonoBehaviour:
   m_MinSize: {x: 200, y: 50}
   m_MaxSize: {x: 16192, y: 8096}
   vertical: 0
-  controlID: 21
+  controlID: 43
   draggingID: 0
 --- !u!114 &9
 MonoBehaviour:
@@ -262,7 +262,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 1
   m_Script: {fileID: 12006, guid: 0000000000000000e000000000000000, type: 0}
-  m_Name: ProjectBrowser
+  m_Name: ConsoleWindow
   m_EditorClassIdentifier: 
   m_Children: []
   m_Position:
@@ -271,16 +271,16 @@ MonoBehaviour:
     y: 432.8
     width: 1167.2
     height: 284
-  m_MinSize: {x: 231, y: 276}
-  m_MaxSize: {x: 10001, y: 10026}
-  m_ActualView: {fileID: 17}
+  m_MinSize: {x: 101, y: 126}
+  m_MaxSize: {x: 4001, y: 4026}
+  m_ActualView: {fileID: 18}
   m_Panes:
   - {fileID: 17}
   - {fileID: 18}
   - {fileID: 19}
   - {fileID: 20}
-  m_Selected: 0
-  m_LastSelected: 1
+  m_Selected: 1
+  m_LastSelected: 0
 --- !u!114 &12
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -348,7 +348,7 @@ MonoBehaviour:
       scrollPos: {x: 0, y: 0}
       m_SelectedIDs: 
       m_LastClickedID: 0
-      m_ExpandedIDs: 62c9fcff70c9fcff82c9fcffa8c9fcff28d7fcff36d7fcff48d7fcff5ad7fcff6ed7fcff06e8fcff1ee8fcff1aecfcffa87cfdffc07cfdffc080fdff1ceffdff34effdff34f3fdfff412feff0c13feff2817feffde2cfefff62cfeff1231feff347bfeff4c7bfeff507ffeffecdefeff04dffeff04e3feff76ebfeff98ebfeff46f6feffec16ffff0e17fffff85dffffacb1ffffc4b1ffffaab5ffff68f6ffff1cfbfffff4ffffff1edb000084120100
+      m_ExpandedIDs: 72c4feff8ac4feff8ac8feff3aeefeff4eeefeff8efafeffa6fafeffaafefeffa481ffffaeb0ffffc6b0ffffcab4ffffe4e8fffffce8fffffcecffff1cfbfffff4ae0000
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1052,9 +1052,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: -1.4985553, y: 3.64812, z: 2.1402826}
+    m_Target: {x: 0, y: 0, z: 0}
     speed: 2
-    m_Value: {x: -1.4985553, y: 3.64812, z: 2.1402826}
+    m_Value: {x: 0, y: 0, z: 0}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -1100,13 +1100,13 @@ MonoBehaviour:
     m_GridAxis: 1
     m_gridOpacity: 0.5
   m_Rotation:
-    m_Target: {x: -0.06666251, y: -0.8681325, z: 0.47675395, w: -0.12135307}
+    m_Target: {x: -0.16639055, y: -0.8336546, z: 0.37649605, w: -0.36838153}
     speed: 2
-    m_Value: {x: 0.06666251, y: 0.8681325, z: -0.47675395, w: 0.12135307}
+    m_Value: {x: 0.16639055, y: 0.8336546, z: -0.37649605, w: 0.36838153}
   m_Size:
-    m_Target: 1.2165961
+    m_Target: 35.35534
     speed: 2
-    m_Value: 1.2165961
+    m_Value: 35.35534
   m_Ortho:
     m_Target: 0
     speed: 2
@@ -1265,7 +1265,7 @@ MonoBehaviour:
   m_Pos:
     serializedVersion: 2
     x: 0
-    y: 456.8
+    y: 512
     width: 1166.2
     height: 258
   m_SerializedDataModeController:
@@ -1290,7 +1290,7 @@ MonoBehaviour:
     m_SkipHidden: 1
     m_SearchArea: 1
     m_Folders:
-    - Assets/_Project/Prefabs
+    - Assets/_Project/Scripts/UI
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -1300,16 +1300,16 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 16
   m_LastFolders:
-  - Assets/_Project/Prefabs
+  - Assets/_Project/Scripts/UI
   m_LastFoldersGridSize: 16
   m_LastProjectPath: C:\UnityRepos\MultiPlayerTankGame\MutliPlayerTankGame
   m_LockTracker:
     m_IsLocked: 0
   m_FolderTreeState:
-    scrollPos: {x: 0, y: 127}
-    m_SelectedIDs: 9cb00000
-    m_LastClickedID: 45212
-    m_ExpandedIDs: 00000000ecaf0000
+    scrollPos: {x: 0, y: 118}
+    m_SelectedIDs: 90be0000
+    m_LastClickedID: 48784
+    m_ExpandedIDs: 00000000f4af0000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1338,7 +1338,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs: 
     m_LastClickedID: 0
-    m_ExpandedIDs: 00000000ecaf0000
+    m_ExpandedIDs: 00000000f4af0000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1364,8 +1364,8 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
   m_ListAreaState:
-    m_SelectedInstanceIDs: 
-    m_LastClickedInstanceID: 0
+    m_SelectedInstanceIDs: 5ea7000024bf0000
+    m_LastClickedInstanceID: 42846
     m_HadKeyboardFocusLastEvent: 1
     m_ExpandedInstanceIDs: c62300007652010016010200549c00003ea70000bcac0000b6a700008ca70000b2a70000a69f000034240200dea40000f217010008030100804d0100549f0000a4bb00007cbb000002b700004cb7000028a5000070d20300d88b0000de940000885c0500e09400008c5c05008a5c0500e2940000b8c1000066a20000d8c0000038910000102b01009c690200a4a10300921e010000000000649300005c670100dee40000f6e8000000e90000387101007673010010c20000d0ed0000c01401005286000078db0000e0e40000b4ba000096c6000026cc000000d2000056ac030094c10000388500000cf6010084fc00002eda0000
     m_RenameOverlay:
@@ -1418,7 +1418,7 @@ MonoBehaviour:
   m_Pos:
     serializedVersion: 2
     x: 0
-    y: 512
+    y: 456.8
     width: 1166.2
     height: 258
   m_SerializedDataModeController:
@@ -1470,7 +1470,7 @@ MonoBehaviour:
     m_OverlaysVisible: 1
   m_LockTracker:
     m_IsLocked: 0
-  m_LastSelectedObjectID: 63664
+  m_LastSelectedObjectID: 44774
 --- !u!114 &20
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -2519,7 +2519,7 @@ MonoBehaviour:
     m_ControlHash: -371814159
     m_PrefName: Preview_InspectorPreview
   m_LastInspectedObjectInstanceID: -1
-  m_LastVerticalScrollValue: 173.59998
+  m_LastVerticalScrollValue: 0
   m_GlobalObjectId: 
   m_InspectorMode: 0
   m_LockTracker:

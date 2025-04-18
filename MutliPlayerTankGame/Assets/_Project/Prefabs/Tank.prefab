@@ -214,7 +214,7 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 1
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
@@ -250,13 +250,16 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  playerTeam: 1
+  playerTeam: 2
   teamColor: {r: 1, g: 0, b: 0, a: 0}
   moveSpeed: 5
   turnSpeed: 100
   playerUI: {fileID: 7610369124154629324}
   bulletPrefab: {fileID: 3264281510194409734, guid: 1c88c71d84b0f5d4c848dabb8d19e53c, type: 3}
   firePoint: {fileID: 2314930897856673436}
+  team1Color: {r: 1, g: 0, b: 0, a: 1}
+  team2Color: {r: 0, g: 0, b: 1, a: 1}
+  defaultColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!114 &5677936672306305665
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -292,7 +295,6 @@ MonoBehaviour:
   healthSlider: {fileID: 5145195469882744567}
   teamText: {fileID: 2835293429689717749}
   uiCanvas: {fileID: 5504694774473856739}
-  teamOutline: {fileID: 8689113297523682017}
 --- !u!1 &2577047920218475444
 GameObject:
   m_ObjectHideFlags: 0
