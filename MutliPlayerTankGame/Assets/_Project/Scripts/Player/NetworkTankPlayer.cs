@@ -54,6 +54,7 @@ public class NetworkTankPlayer : NetworkBehaviour
     public override void OnStartClient()
     {
         base.OnStartClient();
+        playerUI.SetTeamColor(teamColor);
 
         playerUI = GetComponentInChildren<PlayerUI>();
         if (playerUI != null)

@@ -1,5 +1,5 @@
-using Mirror;
 using UnityEngine;
+using Mirror;
 
 public class PlayerHealth : NetworkBehaviour
 {
@@ -14,6 +14,8 @@ public class PlayerHealth : NetworkBehaviour
         if (!isServer) return;
 
         health -= damage;
+        Debug.Log($"[{gameObject.name}] Took {damage} damage. New health: {health}");
+
         if (health <= 0)
         {
             health = 0;
@@ -21,23 +23,27 @@ public class PlayerHealth : NetworkBehaviour
         }
     }
 
-    // Hook method to update health slider when health changes
-   public void OnHealthChanged(float oldHealth, float newHealth)
+    public void OnHealthChanged(float oldHealth, float newHealth)
     {
         if (playerUI == null)
+        {
             playerUI = GetComponentInChildren<PlayerUI>();
-
-        if (playerUI != null)
-            playerUI.SetHealth(newHealth);  // Updates the health slider
+            if (playerUI == null)
+            {
+                Debug.LogWarning("PlayerUI not found for " + gameObject.name);
+                return;
+            }
+        }
+        playerUI.SetHealth(newHealth);
     }
 
-    // Death handling logic
     void OnDeath()
     {
         if (isServer)
         {
-            string killerName = "EnemyPlayer"; // Replace with real killer name if you have it
+            string killerName = "EnemyPlayer"; // Replace this with real owner logic later
             CmdPlayerDied(killerName, gameObject.name);
+            RpcHandleDeath();
         }
     }
 
@@ -61,5 +67,20 @@ public class PlayerHealth : NetworkBehaviour
     void RpcDisplayKillMessage(string killerName, string deadPlayerName)
     {
         Debug.Log($"{killerName} killed {deadPlayerName}");
+    }
+
+    [ClientRpc]
+    void RpcHandleDeath()
+    {
+        // Example visual feedback
+        var renderer = GetComponentInChildren<MeshRenderer>();
+        if (renderer != null)
+            renderer.enabled = false;
+
+        var controller = GetComponent<NetworkTankPlayer>();
+        if (controller != null)
+            controller.enabled = false;
+
+        Debug.Log($"[{gameObject.name}] has died.");
     }
 }

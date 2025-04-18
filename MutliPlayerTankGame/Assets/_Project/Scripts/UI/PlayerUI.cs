@@ -9,6 +9,8 @@ public class PlayerUI : NetworkBehaviour
     public Slider healthSlider;
     public TextMeshProUGUI teamText;
     public Transform uiCanvas;
+    public Image teamOutline;
+
 
     private Camera mainCamera;
 
@@ -17,10 +19,10 @@ public class PlayerUI : NetworkBehaviour
         mainCamera = Camera.main;
 
         // Only enable UI for local player
-        if (!isLocalPlayer && uiCanvas != null)
-        {
-            uiCanvas.gameObject.SetActive(false);
-        }
+        //if (!isLocalPlayer && uiCanvas != null)
+        //{
+        //    uiCanvas.gameObject.SetActive(false);
+        //}
     }
 
     void Update()
@@ -30,6 +32,11 @@ public class PlayerUI : NetworkBehaviour
             // Face the camera
             uiCanvas.rotation = Quaternion.LookRotation(uiCanvas.position - mainCamera.transform.position);
         }
+    }
+    public void SetTeamColor(Color color)
+    {
+        if (teamOutline != null)
+            teamOutline.color = color;
     }
 
     public void SetHealth(float health, float maxHealth = 100f)

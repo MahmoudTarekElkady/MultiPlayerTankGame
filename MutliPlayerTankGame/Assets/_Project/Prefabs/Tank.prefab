@@ -251,7 +251,7 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   playerTeam: 1
-  teamColor: {r: 0, g: 0, b: 0, a: 0}
+  teamColor: {r: 1, g: 0, b: 0, a: 0}
   moveSpeed: 5
   turnSpeed: 100
   playerUI: {fileID: 7610369124154629324}
@@ -292,6 +292,7 @@ MonoBehaviour:
   healthSlider: {fileID: 5145195469882744567}
   teamText: {fileID: 2835293429689717749}
   uiCanvas: {fileID: 5504694774473856739}
+  teamOutline: {fileID: 8689113297523682017}
 --- !u!1 &2577047920218475444
 GameObject:
   m_ObjectHideFlags: 0
