@@ -98,12 +98,26 @@ public class PlayerHealth : NetworkBehaviour
         playerUI.SetHealth(newHealth);
     }
 
+    // Modify the OnDeath method in PlayerHealth.cs
+
     void OnDeath(string killerName)
     {
         if (!isServer) return;
 
         Debug.Log($"SERVER: Processing death of {gameObject.name} killed by {killerName}");
 
+        // Update kill feed
+        KillFeed killFeed = KillFeed.Instance;
+        if (killFeed != null)
+        {
+            killFeed.RegisterKill(killerName, gameObject.name);
+        }
+        else
+        {
+            Debug.LogError("SERVER: KillFeed instance not found!");
+        }
+
+        // Notify the owner
         if (owner != null)
         {
             owner.OnPlayerDeath(killerName);
@@ -119,6 +133,13 @@ public class PlayerHealth : NetworkBehaviour
         if (reviveZone != null)
         {
             reviveZone.EnableReviveZone();
+        }
+
+        // Check win condition
+        GameManager gameManager = GameManager.Instance;
+        if (gameManager != null)
+        {
+            gameManager.CheckWinCondition();
         }
     }
 
@@ -211,5 +232,48 @@ public class PlayerHealth : NetworkBehaviour
         var controller = GetComponent<NetworkTankPlayer>();
         if (controller != null)
             controller.enabled = true;
+    }
+    // Add this method to PlayerHealth.cs
+    public void ForceResetVisualState()
+    {
+        // Ensure player is visually alive and functional
+        var renderers = GetComponentsInChildren<Renderer>(true);
+        foreach (var renderer in renderers)
+        {
+            renderer.enabled = true;
+        }
+
+        // Re-enable controller
+        var controller = GetComponent<NetworkTankPlayer>();
+        if (controller != null)
+        {
+            controller.enabled = true;
+        }
+
+        // Disable revive zone if it's active
+        if (reviveZone != null)
+        {
+            reviveZone.DisableReviveZone();
+        }
+
+        // Force client update
+        RpcForceReset();
+    }
+
+    [ClientRpc]
+    void RpcForceReset()
+    {
+        // Ensure player is visually alive on all clients
+        var renderers = GetComponentsInChildren<Renderer>(true);
+        foreach (var renderer in renderers)
+        {
+            renderer.enabled = true;
+        }
+
+        // Update health UI to show full health
+        if (playerUI != null)
+        {
+            playerUI.SetHealth(health);
+        }
     }
 }

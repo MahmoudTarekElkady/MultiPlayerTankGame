@@ -13,7 +13,7 @@ public class NetworkTankPlayer : NetworkBehaviour
     // Make teamColor a SyncVar too, so it syncs directly
     [SyncVar(hook = nameof(OnTeamColorChanged))]
     public Color teamColor = Color.white;
-
+    
     [Header("Movement Settings")]
     public float moveSpeed = 5f;
     public float turnSpeed = 100f;
@@ -36,6 +36,19 @@ public class NetworkTankPlayer : NetworkBehaviour
     public Color team2Color = Color.blue;
     public Color defaultColor = Color.white;
 
+
+    void Awake()
+    {
+        // Register with game manager when created
+        if (isServer)
+        {
+            GameManager gameManager = GameManager.Instance;
+            if (gameManager != null)
+            {
+                gameManager.RegisterPlayer(this);
+            }
+        }
+    }
     void Start()
     {
         if (isLocalPlayer)
@@ -104,6 +117,16 @@ public class NetworkTankPlayer : NetworkBehaviour
         if (playerUI != null)
         {
             playerUI.SetTeam(newTeam.ToString());
+        }
+
+        // Notify game manager
+        if (isServer)
+        {
+            GameManager gameManager = GameManager.Instance;
+            if (gameManager != null)
+            {
+                gameManager.UpdatePlayerTeam(this, oldTeam, newTeam);
+            }
         }
     }
     void OnTeamColorChanged(Color oldColor, Color newColor)
@@ -222,6 +245,21 @@ public class NetworkTankPlayer : NetworkBehaviour
 
     void MoveAndRotate()
     {
+        // Check if player is allowed to move (during game phase)
+        bool canMove = true;
+        if (GameManager.Instance != null)
+        {
+            canMove = GameManager.Instance.CanPlayerMove();
+            string gameState = GameManager.Instance.GetCurrentGameState();
+            Debug.Log($"MoveAndRotate - Current game state: {gameState}, Can move: {canMove}");
+        }
+        else
+        {
+            Debug.LogWarning("GameManager.Instance is null in MoveAndRotate");
+        }
+
+        if (!canMove) return;
+
         float move = Input.GetAxis("Vertical") * moveSpeed * Time.deltaTime;
         float turn = Input.GetAxis("Horizontal") * turnSpeed * Time.deltaTime;
 
@@ -231,6 +269,7 @@ public class NetworkTankPlayer : NetworkBehaviour
         // Move forward/backward along local forward (XZ plane)
         transform.Translate(Vector3.forward * move);
     }
+
 
     [Command]
     void CmdSendPositionAndRotation(Vector3 position, Quaternion rotation)
@@ -379,7 +418,32 @@ public class NetworkTankPlayer : NetworkBehaviour
             }
         }
     }
+    [Command]
+    public void CmdRequestRestart()
+    {
+        // Only allow restart if in GameOver state or if server/host
+        GameManager gameManager = GameManager.Instance;
+        if (gameManager != null)
+        {
+            string currentState = gameManager.GetCurrentGameState();
+            Debug.Log($"Restart requested in state: {currentState}");
 
+            // Allow restart in GameOver state or if player has authority
+            if (currentState == "GameOver" || isLocalPlayer)
+            {
+                gameManager.RestartGame();
+            }
+        }
+    }
+
+    [ClientRpc]
+    public void RpcResetPosition()
+    {
+        // Reset to spawn position or a predefined location
+        // This is optional - you might want dedicated spawn points
+        transform.position = new Vector3(Random.Range(-10, 10), 0, Random.Range(-10, 10));
+        transform.rotation = Quaternion.identity;
+    }
     [ClientRpc]
     void RpcRevivePlayer(NetworkIdentity playerIdentity)
     {
