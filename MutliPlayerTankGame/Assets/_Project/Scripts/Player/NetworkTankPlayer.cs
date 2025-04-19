@@ -88,31 +88,30 @@ public class NetworkTankPlayer : NetworkBehaviour
         UpdateVisualColor();
     }
 
+
     // Hook called when team changes
     void OnTeamChanged(Team oldTeam, Team newTeam)
     {
-        Debug.Log($"Team changed from {oldTeam} to {newTeam}");
+        Debug.Log($"Team changed from {oldTeam} to {newTeam} for {gameObject.name}");
 
-        // Update the team color based on the new team
-        UpdateTeamColor();
+        // Update team color based on the team
+        UpdateTeamColorFromTeam();
 
-        // Update player UI if available
+        // Apply the color to all renderers
+        ApplyTeamColorToRenderers();
+
+        // Update UI if available
         if (playerUI != null)
         {
             playerUI.SetTeam(newTeam.ToString());
         }
-
-        // Force a visual update on the client
-        if (isClient)
-        {
-            UpdateVisualColor();
-        }
     }
     void OnTeamColorChanged(Color oldColor, Color newColor)
     {
-        Debug.Log($"Team color changed from {oldColor} to {newColor}");
+        Debug.Log($"Team color changed from {oldColor} to {newColor} for {gameObject.name}");
 
-        UpdateVisualColor();
+        // Apply the new color to all renderers
+        ApplyTeamColorToRenderers();
     }
 
 
@@ -165,6 +164,37 @@ public class NetworkTankPlayer : NetworkBehaviour
             }
         }
     }
+    void UpdateTeamColorFromTeam()
+    {
+        switch (playerTeam)
+        {
+            case Team.Team1:
+                teamColor = team1Color;
+                break;
+            case Team.Team2:
+                teamColor = team2Color;
+                break;
+            default:
+                teamColor = defaultColor;
+                break;
+        }
+    }
+    void ApplyTeamColorToRenderers()
+    {
+        Renderer[] renderers = GetComponentsInChildren<Renderer>();
+
+        foreach (var renderer in renderers)
+        {
+            // Skip renderers with specific tags if needed
+            if (renderer.CompareTag("DoNotColorize"))
+                continue;
+
+            renderer.material.color = teamColor;
+        }
+
+        Debug.Log($"Applied color {teamColor} to {renderers.Length} renderers on {gameObject.name}");
+    }
+
 
     [Command]
     void CmdDebugDamagePlayer(uint targetNetId)
@@ -269,8 +299,16 @@ public class NetworkTankPlayer : NetworkBehaviour
     [Command]
     public void CmdSetPlayerTeam(Team team)
     {
+        Debug.Log($"CmdSetPlayerTeam: Setting {gameObject.name} to team {team}");
+
+        // Set the new team
         playerTeam = team;
-        // Team color is updated via the SyncVar hook
+
+        // Update team color on server
+        UpdateTeamColorFromTeam();
+
+        // Force sync colors to all clients
+        RpcSyncTeamColors();
     }
 
     // Called from UI dropdown or button
@@ -362,6 +400,18 @@ public class NetworkTankPlayer : NetworkBehaviour
                 controller.enabled = true;
         }
     }
+    [ClientRpc]
+    void RpcSyncTeamColors()
+    {
+        // Update the team color based on current team
+        UpdateTeamColorFromTeam();
+
+        // Apply the color to all renderers
+        ApplyTeamColorToRenderers();
+
+        Debug.Log($"RpcSyncTeamColors: {gameObject.name} is on team {playerTeam} with color {teamColor}");
+    }
+
 
     public void OnPlayerDeath(string killerName)
     {

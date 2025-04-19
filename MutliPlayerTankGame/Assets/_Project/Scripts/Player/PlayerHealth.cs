@@ -15,6 +15,10 @@ public class PlayerHealth : NetworkBehaviour
     {
         // Get the revive zone component
         reviveZone = GetComponentInChildren<ReviveZone>();
+        if (reviveZone == null)
+        {
+            Debug.LogError($"No ReviveZone found on {gameObject.name} or its children!");
+        }
 
         // Ensure we have UI reference
         playerUI = GetComponentInChildren<PlayerUI>();
@@ -29,7 +33,6 @@ public class PlayerHealth : NetworkBehaviour
             Debug.Log($"Initial health set for {gameObject.name}: {health}");
         }
     }
-
     public void TakeDamage(float damage, NetworkTankPlayer attacker = null)
     {
         if (!isServer)
@@ -163,6 +166,17 @@ public class PlayerHealth : NetworkBehaviour
             controller.enabled = false;
         else
             Debug.LogWarning($"No NetworkTankPlayer found to disable on {gameObject.name}");
+
+        // Enable the revive zone after death
+        if (reviveZone != null)
+        {
+            Debug.Log($"CLIENT: Enabling ReviveZone for {gameObject.name}");
+            reviveZone.EnableReviveZone();
+        }
+        else
+        {
+            Debug.LogError($"CLIENT: No ReviveZone component found on {gameObject.name}!");
+        }
     }
 
     // Method to revive player
