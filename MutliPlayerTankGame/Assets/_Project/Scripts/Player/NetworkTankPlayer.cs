@@ -10,7 +10,8 @@ public class NetworkTankPlayer : NetworkBehaviour
     [SyncVar(hook = nameof(OnTeamChanged))]
     public Team playerTeam = Team.None;
 
-
+    // Make teamColor a SyncVar too, so it syncs directly
+    [SyncVar(hook = nameof(OnTeamColorChanged))]
     public Color teamColor = Color.white;
 
     [Header("Movement Settings")]
@@ -90,9 +91,30 @@ public class NetworkTankPlayer : NetworkBehaviour
     // Hook called when team changes
     void OnTeamChanged(Team oldTeam, Team newTeam)
     {
-        // Update the color based on the new team
+        Debug.Log($"Team changed from {oldTeam} to {newTeam}");
+
+        // Update the team color based on the new team
         UpdateTeamColor();
+
+        // Update player UI if available
+        if (playerUI != null)
+        {
+            playerUI.SetTeam(newTeam.ToString());
+        }
+
+        // Force a visual update on the client
+        if (isClient)
+        {
+            UpdateVisualColor();
+        }
     }
+    void OnTeamColorChanged(Color oldColor, Color newColor)
+    {
+        Debug.Log($"Team color changed from {oldColor} to {newColor}");
+
+        UpdateVisualColor();
+    }
+
 
     // Update player's visual color
     void UpdateVisualColor()
@@ -240,7 +262,9 @@ public class NetworkTankPlayer : NetworkBehaviour
                 teamColor = defaultColor;
                 break;
         }
+        Debug.Log($"Team color updated to {teamColor} for team {playerTeam}");
     }
+
 
     [Command]
     public void CmdSetPlayerTeam(Team team)
