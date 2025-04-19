@@ -15,16 +15,24 @@ public class PlayerRespawn : NetworkBehaviour
         // Wait before respawning player
         StartCoroutine(RespawnCoroutine());
     }
-
+    // In PlayerRespawn.cs
     private IEnumerator RespawnCoroutine()
     {
         yield return new WaitForSeconds(respawnTime);
 
-        // Instantiate the player at the spawn point
-        GameObject newPlayer = Instantiate(gameObject, spawnPoint.position, spawnPoint.rotation);
+        // Get spawn position from SpawnManager based on team
+        Vector3 spawnPosition = SpawnManager.Instance.GetSpawnPosition(GetComponent<NetworkTankPlayer>().playerTeam);
+        Quaternion spawnRotation = Quaternion.identity;
+
+        GameObject newPlayer = Instantiate(gameObject, spawnPosition, spawnRotation);
+
+        // Copy team assignment
+        newPlayer.GetComponent<NetworkTankPlayer>().playerTeam = GetComponent<NetworkTankPlayer>().playerTeam;
+
         NetworkServer.ReplacePlayerForConnection(connectionToClient, newPlayer);
 
-        // Optionally, reset health
+        // Reset health and movement
         newPlayer.GetComponent<PlayerHealth>().health = 100f;
+        newPlayer.GetComponent<NetworkTankPlayer>().RpcResetMovementState();
     }
 }

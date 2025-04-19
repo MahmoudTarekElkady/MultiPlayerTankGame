@@ -2,6 +2,7 @@ using UnityEngine;
 using Mirror;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 
 public class NetworkTankPlayer : NetworkBehaviour
 {
@@ -234,48 +235,99 @@ public class NetworkTankPlayer : NetworkBehaviour
         }
     }
 
-    void FixedUpdate()
-    {
-        if (isLocalPlayer) return;
-
-        // Smooth interpolation for other clients
-        transform.position = Vector3.Lerp(transform.position, syncPosition, Time.deltaTime * 10f);
-        transform.rotation = Quaternion.Lerp(transform.rotation, syncRotation, Time.deltaTime * 10f);
-    }
-
+ 
     void MoveAndRotate()
     {
-        // Check if player is allowed to move (during game phase)
-        bool canMove = true;
-        if (GameManager.Instance != null)
+        // Add comprehensive debug logs
+        if (!isLocalPlayer)
         {
-            canMove = GameManager.Instance.CanPlayerMove();
-            string gameState = GameManager.Instance.GetCurrentGameState();
-            Debug.Log($"MoveAndRotate - Current game state: {gameState}, Can move: {canMove}");
-        }
-        else
-        {
-            Debug.LogWarning("GameManager.Instance is null in MoveAndRotate");
+            Debug.Log("Movement blocked - not local player");
+            return;
         }
 
-        if (!canMove) return;
+        // More detailed game state check
+        if (GameManager.Instance == null)
+        {
+            Debug.LogError("GameManager instance is null!");
+            return;
+        }
 
+        string currentState = GameManager.Instance.GetCurrentGameState();
+        Debug.Log($"Current game state: {currentState}");
+
+        if (currentState != "Playing")
+        {
+            Debug.Log($"Movement blocked - game state is {currentState}");
+            return;
+        }
+
+        if (!enabled)
+        {
+            Debug.LogError("NetworkTankPlayer component is disabled!");
+            return;
+        }
+
+        // Actual movement code
         float move = Input.GetAxis("Vertical") * moveSpeed * Time.deltaTime;
         float turn = Input.GetAxis("Horizontal") * turnSpeed * Time.deltaTime;
 
-        // Rotate around the Y-axis
-        transform.Rotate(0, turn, 0);
+        Debug.Log($"Movement input - vertical: {move}, horizontal: {turn}");
 
-        // Move forward/backward along local forward (XZ plane)
+        transform.Rotate(0, turn, 0);
         transform.Translate(Vector3.forward * move);
     }
 
 
+    private IEnumerator DelayedTeamUIShow()
+    {
+        yield return new WaitForSeconds(0.1f); // Small delay to ensure UI is ready
+
+        TeamSelectionUI teamUI = TeamSelectionUI.Instance ??
+                               FindObjectOfType<TeamSelectionUI>(true);
+
+        if (teamUI != null)
+        {
+            teamUI.gameObject.SetActive(true);
+            teamUI.ShowUI();
+        }
+    }
+
+    // In NetworkTankPlayer.cs
     [Command]
     void CmdSendPositionAndRotation(Vector3 position, Quaternion rotation)
     {
-        syncPosition = position;
-        syncRotation = rotation;
+        // Only update if the difference is significant
+        if (Vector3.Distance(syncPosition, position) > 0.1f ||
+            Quaternion.Angle(syncRotation, rotation) > 1f)
+        {
+            syncPosition = position;
+            syncRotation = rotation;
+            RpcSyncTransform(position, rotation);
+        }
+    }
+
+    [ClientRpc]
+    void RpcSyncTransform(Vector3 position, Quaternion rotation)
+    {
+        if (!isLocalPlayer)
+        {
+            transform.position = position;
+            transform.rotation = rotation;
+        }
+    }
+
+    void FixedUpdate()
+    {
+        if (isLocalPlayer)
+        {
+            CmdSendPositionAndRotation(transform.position, transform.rotation);
+        }
+        else
+        {
+            // Smooth interpolation for other clients
+            transform.position = Vector3.Lerp(transform.position, syncPosition, Time.deltaTime * 10f);
+            transform.rotation = Quaternion.Lerp(transform.rotation, syncRotation, Time.deltaTime * 10f);
+        }
     }
 
     [Command]
@@ -333,7 +385,34 @@ public class NetworkTankPlayer : NetworkBehaviour
         }
         Debug.Log($"Team color updated to {teamColor} for team {playerTeam}");
     }
+    [ClientRpc]
+public void RpcFullReset()
+{
+    if (isLocalPlayer)
+    {
+        ClientReset();
+    }
+}
 
+
+[Command]
+public void CmdRequestMovementReset()
+{
+    RpcResetMovement();
+}
+
+[ClientRpc]
+public void RpcResetMovement()
+{
+    if (isLocalPlayer)
+    {
+        Debug.Log("Resetting movement state for local player");
+        enabled = true;
+        
+        // Force input reset
+        // (Add any input-specific reset logic here)
+    }
+}
 
     [Command]
     public void CmdSetPlayerTeam(Team team)
@@ -465,7 +544,7 @@ public class NetworkTankPlayer : NetworkBehaviour
         }
     }
     [ClientRpc]
-    void RpcSyncTeamColors()
+    public void RpcSyncTeamColors()
     {
         // Update the team color based on current team
         UpdateTeamColorFromTeam();
@@ -476,7 +555,32 @@ public class NetworkTankPlayer : NetworkBehaviour
         Debug.Log($"RpcSyncTeamColors: {gameObject.name} is on team {playerTeam} with color {teamColor}");
     }
 
+    [ClientRpc]
+    public void RpcResetMovementState()
+    {
+        if (isLocalPlayer)
+        {
+            // Re-enable input processing
+            enabled = true;
 
+            // Reset any movement variables
+            Debug.Log("Movement state reset");
+        }
+    }
+
+    [TargetRpc]
+    public void TargetResetCameraFollow(NetworkConnection target)
+    {
+        if (isLocalPlayer && mainCamera != null)
+        {
+            var cameraFollow = mainCamera.GetComponent<CameraFollowTopDown>();
+            if (cameraFollow != null)
+            {
+                cameraFollow.target = transform;
+                Debug.Log("Camera follow reset");
+            }
+        }
+    }
     public void OnPlayerDeath(string killerName)
     {
         CmdPlayerDied(killerName, gameObject.name);
@@ -553,6 +657,59 @@ public class NetworkTankPlayer : NetworkBehaviour
         {
             // Start the revive process
             CmdRevivePlayer(deadPlayer);
+        }
+    }
+    // In NetworkTankPlayer.cs
+    [ClientRpc]
+    public void RpcFullPlayerReset(Vector3 spawnPosition)
+    {
+        transform.position = spawnPosition;
+        transform.rotation = Quaternion.identity;
+
+        if (isLocalPlayer)
+        {
+            ClientReset();
+
+            // Force camera update
+            if (mainCamera != null)
+            {
+                var camFollow = mainCamera.GetComponent<CameraFollowTopDown>();
+                if (camFollow != null)
+                {
+                    camFollow.target = transform;
+                    camFollow.transform.position = transform.position + new Vector3(0, 10, -7);
+                }
+            }
+        }
+
+        // Reset physics on all clients
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.isKinematic = true;
+        }
+    }
+
+    public void ClientReset()
+    {
+        Debug.Log("CLIENT RESET");
+
+        // 1. Enable components
+        enabled = true;
+        GetComponent<PlayerHealth>().enabled = true;
+
+        // 2. Reset input
+        // (Add any input-specific reset logic here)
+
+        // 3. Reset physics
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.isKinematic = true;
         }
     }
 }

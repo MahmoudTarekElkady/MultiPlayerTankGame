@@ -99,32 +99,23 @@ public class PlayerHealth : NetworkBehaviour
     }
 
     // Modify the OnDeath method in PlayerHealth.cs
-
+    // In PlayerHealth.cs
     void OnDeath(string killerName)
     {
         if (!isServer) return;
 
-        Debug.Log($"SERVER: Processing death of {gameObject.name} killed by {killerName}");
+        Debug.Log($"Death processing for {gameObject.name}");
 
         // Update kill feed
-        KillFeed killFeed = KillFeed.Instance;
-        if (killFeed != null)
+        if (KillFeed.Instance != null)
         {
-            killFeed.RegisterKill(killerName, gameObject.name);
-        }
-        else
-        {
-            Debug.LogError("SERVER: KillFeed instance not found!");
+            KillFeed.Instance.RegisterKill(killerName, gameObject.name);
         }
 
         // Notify the owner
         if (owner != null)
         {
             owner.OnPlayerDeath(killerName);
-        }
-        else
-        {
-            Debug.LogError($"SERVER: No owner set for {gameObject.name}, can't process death properly");
         }
 
         RpcHandleDeath();
@@ -135,13 +126,12 @@ public class PlayerHealth : NetworkBehaviour
             reviveZone.EnableReviveZone();
         }
 
-        // Check win condition
-        GameManager gameManager = GameManager.Instance;
-        if (gameManager != null)
+        // Force win condition check with delay
+        if (GameManager.Instance != null)
         {
-            gameManager.CheckWinCondition();
+            GameManager.Instance.Invoke("CheckWinCondition", 0.5f);
         }
-    }
+    }   
 
     public override void OnStartAuthority()
     {

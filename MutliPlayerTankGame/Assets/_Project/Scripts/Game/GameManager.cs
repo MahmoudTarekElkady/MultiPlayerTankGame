@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 public class GameManager : NetworkBehaviour
 {
@@ -108,6 +109,8 @@ public class GameManager : NetworkBehaviour
         }
     }
 
+    // In GameManager.cs
+    [Server]
     public void CheckWinCondition()
     {
         if (!isServer || gameState != "Playing") return;
@@ -120,29 +123,29 @@ public class GameManager : NetworkBehaviour
             int team1Alive = CountAlivePlayers(NetworkTankPlayer.Team.Team1);
             int team2Alive = CountAlivePlayers(NetworkTankPlayer.Team.Team2);
 
-            Debug.Log($"Win condition check: Team1 alive: {team1Alive}, Team2 alive: {team2Alive}");
+            Debug.Log($"Win check - Team1: {team1Alive}, Team2: {team2Alive}");
 
-            // Get counts before evaluating to avoid accessing potentially invalid references
+            // Get counts before evaluating
             int team1Count = teamPlayers[NetworkTankPlayer.Team.Team1].Count;
             int team2Count = teamPlayers[NetworkTankPlayer.Team.Team2].Count;
 
             // Check if one team is completely eliminated
             if (team1Alive == 0 && team1Count > 0)
             {
-                // Team 2 wins
                 EndGame("Team 2");
+  
             }
             else if (team2Alive == 0 && team2Count > 0)
             {
-                // Team 1 wins
                 EndGame("Team 1");
             }
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"Error in CheckWinCondition: {e.Message}\n{e.StackTrace}");
+            Debug.LogError($"Win check error: {e.Message}");
         }
     }
+
 
     private int CountAlivePlayers(NetworkTankPlayer.Team team)
     {
@@ -257,81 +260,69 @@ public class GameManager : NetworkBehaviour
         return gameState;
     }
 
-    [Server]
+    // In GameManager.cs
+[Server]
     public void RestartGame()
     {
-        Debug.Log("Restarting game");
+        Debug.Log("=== SERVER RESTART INITIATED ===");
 
-        // Reset team lists - make sure to clear them first
-        foreach (var team in teamPlayers.Keys)
-        {
-            teamPlayers[team].Clear();
-        }
+        // 1. Reset spawn points
+        SpawnManager.Instance?.ResetSpawnPoints();
 
-        // Reset all players and re-register them
-        NetworkTankPlayer[] allPlayers = FindObjectsOfType<NetworkTankPlayer>();
-        foreach (var player in allPlayers)
+        // 2. Reset game state
+        gameState = "TeamSelection";
+
+        // 3. Reset all players
+        foreach (var player in FindObjectsOfType<NetworkTankPlayer>())
         {
             if (player == null) continue;
 
-            try
+            // Get spawn position
+            Vector3 spawnPos = SpawnManager.Instance?.GetSpawnPosition(player.playerTeam) ??
+                              new Vector3(Random.Range(-10, 10), 0, Random.Range(-10, 10));
+
+            // Reset everything
+            player.transform.position = spawnPos;
+            player.transform.rotation = Quaternion.identity;
+            player.playerTeam = NetworkTankPlayer.Team.None;
+            player.teamColor = player.defaultColor;
+            player.enabled = true;
+
+            // Reset health
+            PlayerHealth health = player.GetComponent<PlayerHealth>();
+            if (health != null)
             {
-                // Reset health
-                PlayerHealth health = player.GetComponent<PlayerHealth>();
-                if (health != null)
-                {
-                    health.health = 100f;
-                    // Force a visual state reset to fix potential issues
-                    health.ForceResetVisualState();
-                }
-
-                // Reset team
-                player.playerTeam = NetworkTankPlayer.Team.None;
-                player.teamColor = player.defaultColor;
-
-                // Re-enable if disabled
-                player.enabled = true;
-
-                // Reset position
-                player.RpcResetPosition();
-
-                // Re-add to None team list
-                teamPlayers[NetworkTankPlayer.Team.None].Add(player);
+                health.health = 100f;
+                health.ForceResetVisualState();
             }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"Error resetting player {player.name}: {e.Message}");
-            }
+
+            // Network sync
+            player.RpcFullPlayerReset(spawnPos);
         }
 
-        // Change game state
-        gameState = "TeamSelection";
-
-        // Notify clients
+        // 4. Notify clients
         RpcGameRestarted();
+
+        Debug.Log("=== SERVER RESTART COMPLETE ===");
     }
 
     [ClientRpc]
     void RpcGameRestarted()
     {
-        // Show team selection UI
-        TeamSelectionUI teamUI = TeamSelectionUI.Instance;
-        if (teamUI != null)
+        Debug.Log("Client received restart notification");
+
+        // Force UI update
+        if (TeamSelectionUI.Instance != null)
         {
-            teamUI.ShowUI();
-            Debug.Log("Team Selection UI should be visible now");
-        }
-        else
-        {
-            Debug.LogError("TeamSelectionUI not found!");
+            TeamSelectionUI.Instance.ShowUI();
         }
 
-        // Make sure the win screen is hidden
-        if (winScreen != null)
+        // Reset local player
+        var localPlayer = NetworkClient.localPlayer?.GetComponent<NetworkTankPlayer>();
+        if (localPlayer != null)
         {
-            winScreen.SetActive(false);
+            localPlayer.ClientReset();
         }
-
-        Debug.Log("Game restarted on client. Game state: " + gameState);
     }
+    
 }
