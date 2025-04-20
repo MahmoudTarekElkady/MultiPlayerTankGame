@@ -1,5 +1,6 @@
-using UnityEngine;
 using Mirror;
+using UnityEngine;
+
 
 [RequireComponent(typeof(Rigidbody))]
 public class Bullet : NetworkBehaviour

@@ -1,7 +1,7 @@
+using Mirror;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using Mirror;
 
 public class PlayerUI : NetworkBehaviour
 {
@@ -16,12 +16,10 @@ public class PlayerUI : NetworkBehaviour
     {
         mainCamera = Camera.main;
         Debug.Log($"PlayerUI started for {transform.parent?.name ?? gameObject.name}");
-
         if (healthSlider == null)
         {
             Debug.LogError($"Health slider reference missing on PlayerUI for {transform.parent?.name ?? gameObject.name}");
         }
-
         if (teamText == null)
         {
             Debug.LogError($"Team text reference missing on PlayerUI for {transform.parent?.name ?? gameObject.name}");
